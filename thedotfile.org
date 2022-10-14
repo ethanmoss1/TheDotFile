@@ -1,0 +1,1407 @@
+#+TITLE:  THE DOT FILE
+#+SUBTITLE: The ridiculous one file 'dot file', for the low low price of my sanity.
+#+AUTHOR: Ethan Moss
+#+DATE:   25/09/2022
+#+PROPERTY: header-args :results none :comments both
+* Introduction
+Welcome to my literate Dotfile (yes, singular dotfile). Within this org file I have not only my
+personal EMACS configuration but my configurations for most applications I use.
+
+Document below is Org tanglable source blocks that contain the configurations I have curated.
+Most of the configuration is EMACS related and the other configurations added on top.
+To tangle do (find out how to tangle everything)
+
+** Things to note
+Throughout this document I have spent time trying to figure out how to do certian things. I've decided to culminate as much of that information as possible at the top here for future reference.
+
+*** Make executable
+Some of the code blocks are ment to be executed, either indepentently or by another application, for example the [[Currently Playing Module][Currently Playing]] Module for Polybar need to be an executable script. The use of =:shebang= header-arg allows turn the exported code block into a executable script.
+
+** TODOS LIST
+- Sort out YAY installation
+- configurations such and UDEV Rules and Systemd
+-
+
+** Licence
+#+NAME: Licence
+#+begin_src emacs-lisp
+
+  ;; This file is not part of GNU Emacs.
+
+  ;; This program is free software; you can redistribute it and/or modify
+  ;; it under the terms of the GNU General Public License as published by
+  ;; the Free Software Foundation, either version 3 of the License, or
+  ;; (at your option) any later version.
+
+  ;; This program is distributed in the hope that it will be useful,
+  ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ;; GNU General Public License for more details.
+
+  ;; You should have received a copy of the GNU General Public License
+  ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#+end_src
+
+** File Headings
+thanks to farlado for insperation. credit to him for this.
+[[https://github.com/farlado/dotemacs/#giving-files-their-headers][Farlado Github]]
+
+*** early-init.el header
+#+begin_src emacs-lisp :noweb yes :tangle ~/.config/emacs/early-init.el
+
+  ;;; early-init.el - Initalisation of GNU Emacs - Customised by Ethan Moss
+
+  <<Licence>>
+
+  ;;; Commentary:
+
+  ;; Commentary goes here
+
+  ;;; Code:
+
+#+end_src
+
+*** init.el header
+#+begin_src emacs-lisp :noweb yes :tangle ~/.config/emacs/init.el
+
+  ;;; init.el - Initalisation of GNU Emacs - Customised by Ethan Moss
+
+  <<Licence>>
+
+  ;;; Commentary:
+
+  ;; Commentary goes here
+
+  ;;; Code:
+
+#+end_src
+
+* Configurations
+Note about configs
+** Application Installation
+*** System Package Manager - Yet Another Yoghurt
+English Yoghurt that is.
+Yet another yogurt (yay) is a AUR helper on top of pacman.
+
+#+begin_src bash
+  #!/bin/bash
+
+  # install yay
+  git clone https://aur.archlinux.org/yay.git $HOME/git
+  # yay configurations
+  # TODO : SET UP YAY
+
+
+  packages="emacs-git polybar dunst tlp alacritty playerctl zscroll-git"
+
+  yay -S $packages --noconfirm
+  # Emacs and EXWM packages:
+  # install emacs
+  # install xorg ect
+  # set up .xinitrc file
+
+#+end_src
+
+*** X11 Init file
+init file for setting up window manager and background applications such as Spotifyd, notification
+manager (Dunst) and more.
+#+begin_src bash :tangle ~/.xinitrc
+
+  #!/bin/sh
+  userresources=$XDG_CONFIG_HOME/X11/xinit/.Xresources
+  usermodmap=$XDG_CONFIG_HOME/X11/xinit/.Xmodmap
+  sysresources=/etc/X11/xinit/.Xresources
+  sysmodmap=/etc/X11/xinit/.Xmodmap
+  if [ -f $sysresources ]; then xrdb -merge $sysresources; fi
+  if [ -f $sysmodmap ]; then xmodmap $sysmodmap; fi
+  if [ -f "$userresources" ]; then xrdb -merge "$userresources"; fi
+  if [ -f "$usermodmap" ]; then xmodmap "$usermodmap"; fi
+  setxkbmap gb
+  xsetroot -solid "#282828" -cursor_name left_ptr
+  xset r rate 250 50
+  # picom -b &
+  # feh --no-fehbg --bg-fill --randomize ~/.wallpaper/* &
+  xhost +SI:localuser:$USER
+  export VISUAL=emacsclient
+  export EDITOR="$VISUAL"
+  spotifyd
+  numlockx
+  polkit-dumb-agent &
+  dunst &
+  exec emacs
+  #emacs --daemon -f exwm-enable
+  #exec dbus-launch --exit-with-session emacsclient -c
+
+  if [ -d /etc/X11/xinit/xinitrc.d ] ; then
+      for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
+	  [ -x "$f" ] && . "$f"
+      done
+      unset f
+  fi
+
+#+end_src
+
+** Polybar
+[[https://github.com/polybar/polybar][Polybar Github]]
+Polybar Config:
+#+begin_src conf :tangle ~/.config/polybar/config.ini
+
+  [settings]
+  screenchange-reload = true
+  pseudo-transparency = true
+
+  [global/wm]
+  margin-top = 0
+  margin-bottom = 0
+
+  [colors]
+  background	  = #282828
+  background-alt1 = #3c3836
+  background-alt2 = #665C54
+  foreground      = #EBDBB2
+  red     = #fb4934
+  green   = #b8bb26
+  yellow  = #fabd2f
+  blue    = #83a598
+  purple  = #d3869b
+  aqua    = #8ec07c
+  orange  = #fe8019
+
+  [bar/exwm]
+  width = 100%
+  height = 30pt
+  radius = 0
+  background = ${colors.background}
+  foreground = ${colors.foreground}
+  line-size = 3pt
+  padding-left = 1
+  padding-right = 1
+  module-margin = 1
+  separator = |
+  separator-foreground = ${colors.background-alt2}
+  font-0 = Roboto Mono Nerd Font;2
+  modules-left = xworkspaces spotify spotify-prev spotify-play-pause spotify-next
+  modules-center = date
+  modules-right = network audio backlight battery
+  cursor-click = pointer
+  cursor-scroll = ns-resize
+  enable-ipc = true
+
+  [module/xworkspaces]
+  type = internal/xworkspaces
+  label-active = %name%
+  label-active-background = ${colors.background-alt}
+  label-active-underline= ${colors.yellow}
+  label-active-padding = 1
+  label-occupied = %name%
+  label-occupied-padding = 1
+  label-urgent = %name%
+  label-urgent-background = ${colors.red}
+  label-urgent-padding = 1
+  label-empty = %name%
+  label-empty-foreground = ${colors.background-alt2}
+  label-empty-padding = 1
+
+  [module/spotify]
+  type = custom/script
+  tail = true
+  interval = 1
+  format-prefix = " "
+  format = <label>
+  exec = ~/.config/polybar/scripts/scroll_spotify_status.sh
+
+  [module/spotify-prev]
+  type = custom/script
+  exec = echo "寧"
+  format = <label>
+  click-left = playerctl previous
+
+  [module/spotify-play-pause]
+  type = custom/ipc
+  hook-0 = echo ""
+  hook-1 = echo "契"
+  initial = 1
+  click-left = playerctl play-pause
+
+  [module/spotify-next]
+  type = custom/script
+  exec = echo "嶺"
+  format = <label>
+  click-left = playerctl next
+
+  [module/date]
+  type = internal/date
+  interval = 1
+  date = "%a %d %b %Y - %I:%M %P"
+  label = %date%
+  label-foreground = ${colors.yellow}
+
+  [module/network]
+  type = internal/network
+  interface = wlan0
+  interface-type = wireless
+  accumulate-stats = true
+  label-connected = %essid% %netspeed:9%
+  label-connected-foreground = ${colors.foreground}
+  label-disconnected = Disconnected
+  label-disconnected-foreground = ${colors.background-alt2}
+
+  [module/audio]
+  type = internal/pulseaudio
+  format-volume = <ramp-volume> <label-volume>
+  label-volume = %percentage:3%%
+  label-muted = "ﱝ MUTE"
+  label-muted-foreground = ${colors.background-alt2}
+  ramp-volume-0 = 
+  ramp-volume-1 = 
+  ramp-volume-2 = 
+
+  [module/backlight]
+  type = internal/backlight
+  card = intel_backlight
+  enable-scroll = true
+  format = <ramp> <label>
+  label = %percentage:3%%
+  ramp-0 = " "
+  ramp-1 = 
+  ramp-2 = 
+  ramp-3 = 
+
+  [module/battery]
+  type = internal/battery
+  battery = BAT1
+  full-at = 98
+  label-charging = %percentage:3%%
+  format-charging = <animation-charging> <label-charging>
+  format-charging-underline = ${colors.yellow}
+  label-discharging = %percentage:3%%
+  format-discharging = <ramp-capacity> <label-discharging>
+  format-discharging-underline = ${self.format-charging-underline}
+  label-full = %percentage:3%%
+  format-full = <ramp-capacity> <label-full>
+  format-full-underline = ${self.format-charging-underline}
+  ramp-capacity-0 = 
+  ramp-capacity-1 = 
+  ramp-capacity-2 = 
+  ramp-capacity-3 = 
+  ramp-capacity-4 = 
+  animation-charging-0 = 
+  animation-charging-1 = 
+  animation-charging-2 = 
+  animation-charging-3 = 
+  animation-charging-4 = 
+  animation-charging-framerate = 750
+
+#+end_src
+
+*** UDEV for scrolling
+UDEV Rule so you can scroll the backlight.
+
+Tangle to /etc/udev/rules.d/backlight.rules
+#+begin_src udev
+  ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video $sys$devpath/brightness", RUN+="/bin/chmod g+w $sys$devpath/brightness"
+#+end_src
+
+*** Currently Playing Module
+[[https://github.com/PrayagS/polybar-spotify][Polybar-Spotify Github]]
+This module allows Polybar to see the currently playing music. Doesnt just need to be spotify.
+#+begin_src bash :tangle ~/.config/polybar/scripts/get_spotify_status.sh :shebang "#! /bin/bash"
+
+  PARENT_BAR="exwm"
+  PARENT_BAR_PID=$(pgrep -a "polybar" | grep "$PARENT_BAR" | cut -d" " -f1)
+  PLAYER="playerctld"
+
+  # https://github.com/altdesktop/playerctl/#printing-properties-and-metadata
+  FORMAT="{{ title }} | {{ artist }}"
+
+  # Sends $2 as message to all polybar PIDs that are part of $1
+  update_hooks() {
+      while IFS= read -r id
+      do
+	  polybar-msg -p "$id" hook spotify-play-pause $2 1>/dev/null 2>&1
+      done < <(echo "$1")
+  }
+
+  PLAYERCTL_STATUS=$(playerctl --player=$PLAYER status 2>/dev/null)
+  EXIT_CODE=$?
+
+  if [ $EXIT_CODE -eq 0 ]; then
+      STATUS=$PLAYERCTL_STATUS
+  else
+      STATUS="No player is running"
+  fi
+
+  if [ "$1" == "--status" ]; then
+      echo "$STATUS"
+  else
+      if [ "$STATUS" = "Stopped" ]; then
+	  echo "No music is playing"
+      elif [ "$STATUS" = "Paused"  ]; then
+	  update_hooks "$PARENT_BAR_PID" 2
+	  playerctl --player=$PLAYER metadata --format "$FORMAT"
+      elif [ "$STATUS" = "No player is running"  ]; then
+	  echo "$STATUS"
+      else
+	  update_hooks "$PARENT_BAR_PID" 1
+	  playerctl --player=$PLAYER metadata --format "$FORMAT"
+      fi
+  fi
+
+#+end_src
+
+Config for the scrolling of the currently playing song
+#+begin_src bash :tangle ~/.config/polybar/scripts/scroll_spotify_status.sh :shebang "#! /bin/bash"
+
+  # see man zscroll for documentation of the following parameters
+  zscroll -l 30 \
+	  --delay 0.1 \
+	  --scroll-padding "               " \
+	  --match-command "`dirname $0`/get_spotify_status.sh --status" \
+	  --match-text "Playing" "--scroll 1" \
+	  --match-text "Paused" "--scroll 0" \
+	  --update-check true "`dirname $0`/get_spotify_status.sh" &
+
+  wait
+
+#+end_src
+
+** Notification Manager - Dunst
+Dunst is a simple notification manager that displays a highly customisable notification widget. Below is my configuration that. I also have a small shell script that pipes the notification through to the messages buffer for tracking history of notifications.
+#+begin_src conf :tangle ~/.config/dunst/dunstrc
+
+    [global]
+    # Display
+      monitor = 0			# Default monitor to display on
+      follow = mouse			# display notification on focused monitor
+    # Geometry
+      width = 300			# Dynamic width eg (0,300) or constant width just 300
+      height = 300			# Maximum height
+      origin = top-right		# Poition of notification
+      offset = 10x42			# Offset from origin
+      scale = 0				# autodetected if 0
+      notification_limit = 0		# 0 means no limit
+    # Progress Bar
+      highlight = "#a9b665"		# Progress bar colour
+      progress_bar = true		# Turn on/off, Appears when hint is passed
+      progress_bar_height = 10
+      progress_bar_frame_width = 1
+      progress_bar_min_width = 150
+      progress_bar_max_width = 300
+    # General
+      indicate_hidden = yes		# show how many are hidden
+      transparency = 0			# transparency of window
+      separator_height = 2		# pixels between two notifications
+      padding = 8			# between text and seperator
+      horizontal_padding = 8		# horizontal padding
+      text_icon_padding = 0		# padding between texta nd icon
+      frame_width = 3			# width of frame in pixels
+      frame_color = "#282828"		# frame colour
+      separator_color = frame		# auto, foreground, frame or hex of a colour
+      sort = yes			# by urgency critical at decending order
+      idle_threshold = 120		# dont remove notification if pc idle over x seconds
+    # Text
+      font = RobotoMono Nerd Font Mono 10	# Font
+      line_height = 0			# Space between lines, font height used if more than x
+      markup = full			# full, strip or no.
+      format = "<b>%s</b>\n%b"		# the format of messages, uses markup
+      alignment = left			# alignment of text horizontally
+      vertical_alignment = center	# vertical alignment
+      show_age_threshold = 60		# show age after x seconds, -1 disables
+      ellipsize = middle		# start middle end - where to make ellipsis in
+      ignore_newline = no		# ignore \n in notifications
+      stack_duplicates = true		# stack notifications of same content
+      hide_duplicate_count = false	# hide duplicate amount
+      show_indicators = yes		# (u) for URLS and (a) for actions
+    # Icons
+      icon_position = left		# left right top and off
+      min_icon_size = 0			# scale smaller icons up to this size, 0 disables
+      max_icon_size = 32		# scale larger icons down to this size
+      icon_path = /usr/share/icons/gnome/16x16/status/:/usr/share/icons/gnome/16x16/devices/
+    # History
+      sticky_history = yes		# Sticky history, treat like any notification
+      history_length = 20		# length of the history
+    # Misc/Advanced
+      dmenu = /usr/bin/dmenu -p dunst:	# dmenu path
+      browser = /usr/bin/xdg-open	# opening urls in context menu
+      always_run_script = true		# run rule defined script
+      title = Dunst			# title of windows spawned by dunst
+      class = Dunst			# class of windows spawned by dunst
+      corner_radius = 0			# pixel rounded corners
+      ignore_dbusclose = false		# use dunst defined timeouts not app specific
+      force_xwayland = false		# wayland specfic
+      force_xinerama = false		# legacy support
+    # Mouse
+      mouse_left_click = close_current
+      mouse_middle_click = do_action, close_current
+      mouse_right_click = close_all
+
+  [experimental]
+      per_monitor_dpi = false
+
+  ### Appearance of urgency
+  [urgency_low]
+      background = "#3c3836"
+      foreground = "#665c54"
+      frame-color = "#3c3836"
+      timeout = 10
+      script = ~/.config/dunst/script/urgency_low
+
+  [urgency_normal]
+      background = "#3c3836"
+      foreground = "#ebdbb2"
+      frame_color = "#3c3836"
+      timeout = 10
+      script = ~/.config/dunst/scripts/urgency_normal
+
+  [urgency_critical]
+      background = "#fb4933"
+      foreground = "#421E1E"
+      frame_color = "#fb4933"
+      timeout = 0
+      script = ~/.config/dunst/scripts/urgency_critical
+
+#+end_src
+
+Small shell script for tracking notifications, you may need to =chmod +x= the file
+#+begin_src bash :tangle ~/.config/dunst/emacsmessages.sh
+
+  #!/bin/sh
+
+  APPNAME="$1"
+  SUMMARY="$2"
+  BODY="$3"
+  ICON="$4"
+  URGENCY="$5"
+  emacsclient -n --eval "(message \"Dunst: /${APPNAME}/${SUMMARY}: $BODY\")"
+
+#+end_src
+
+** Alacritty
+Terminal Emulator
+#+begin_src yaml :tangle ~/.config/alacritty/alacritty.yml
+
+  # Colors (Gruvbox Dark Medium)
+  colors:
+    primary:
+      background: '#282828'
+      foreground: '#ebdbb2'
+
+    normal:
+      black:    '#928374'
+      red:      '#fb4934'
+      green:    '#b8bb26'
+      yellow:   '#fabd2f'
+      blue:     '#83a598'
+      magenta:  '#d3869b'
+      cyan:     '#8ec07c'
+      white:    '#ebdbb2'
+
+    bright:
+      black:    '#282828'
+      red:      '#cc241d'
+      green:    '#98971a'
+      yellow:   '#d79921'
+      blue:     '#458588'
+      magenta:  '#b16286'
+      cyan:     '#689d6a'
+      white:    '#a89984'
+
+
+  window:
+    padding:
+      x: 10
+      y: 10
+      # opacity: 0.85
+
+  font:
+    normal:
+      family: RobotoMono Nerd Font
+    size: 8.0
+
+  cursor:
+    style: block
+    unfocused_hollow: true
+
+  live_config_reload: true
+  decorations: full
+
+#+end_src
+
+** EMACS
+:properties:
+:header-args: emacs-lisp :tangle ~/.config/emacs/init.el
+:end:
+*** Emacs Early Init
+Description of early init
+#+begin_src emacs-lisp :tangle ~/.config/emacs/early-init.el
+
+  ;; Frame Modifications
+  (menu-bar-mode -1)
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+  (tooltip-mode -1)
+  (set-fringe-mode 10)
+
+  ;; Font
+  (set-face-attribute 'default nil :family "Roboto Mono Nerd Font" :height 100)
+  (set-face-attribute 'fixed-pitch  nil :family "Roboto Mono Nerd Font" :height 100)
+  (set-face-attribute 'fixed-pitch-serif nil :family "Roboto Mono Nerd Font" :height 100)
+
+  ;; Startup optimizations
+  ;; https://emacs.stackexchange.com/a/34367
+  ;; Set garbage collection threshold
+
+  ;; Tweaks from
+  ;; https://reddit.com/r/emacs/comments/3kqt6e/2_easy_little_known_steps_to_speed_up_emacs_start/
+
+  (setq gc-cons-threshold-original gc-cons-threshold)
+  (setq gc-cons-threshold (* 100 1024 1024))
+  (setq file-name-handler-alist-original file-name-handler-alist)
+  (setq file-name-handler-alist nil)
+
+  (set-frame-parameter nil 'fullscreen 'fullboth)
+
+  (run-with-idle-timer
+   5 nil
+   (lambda ()
+     (setq gc-cons-threshold gc-cons-threshold-original)
+     (setq file-name-handler-alist file-name-handler-alist-original)
+     (makunbound 'gc-cons-threshold-original)
+     (makunbound 'file-name-handler-alist-original)
+     (message "init file: gc-cons-threshold and file-name-handler-alist restored")))
+
+#+end_src
+
+*** Package Management - Use-package
+[[https://github.com/jwiegley/use-package][use-package github]]
+=use-package= is pivotal to this file. Without use-package everything feels messy and unorganised.
+use-package is set to auto install if not available as well as insuring all packages we've
+configured are installed. we also auto update packages to keep packages up-to-date with all the new
+juicy features!
+[[https://jwiegley.github.io/use-package/keywords/][Use-Package Keywords]]
+
+#+begin_src emacs-lisp
+
+  (require 'package)                   ; Bring in all package management functions
+
+  ;; A list of package repositories
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+
+  (package-initialize)                 ; Initializes the package system and prepares it
+
+  (unless package-archive-contents     ; Unless a package archive already exists,
+    (package-refresh-contents))        ; Let  Emacs knows which packages to load
+
+
+  ;; Initialize use-package on non-linux platforms
+  (unless (package-installed-p 'use-package)        ; Install if not already Installed
+    (package-install 'use-package))
+
+  (require 'use-package)                            ; Load for use
+
+  ;; Make sure packages are downloaded and installed before they are run
+  ;; also frees you from having to put :ensure t after installing EVERY PACKAGE.
+  (setq use-package-always-ensure t)
+
+  ;; Auto update! #bleedin' edge
+  (use-package auto-package-update
+      :config
+      (setq auto-package-update-delete-old-versions t)
+      (setq auto-package-update-hide-results t)
+      (auto-package-update-maybe))
+
+#+end_src
+
+*** Window Manager - EXWM, Polybar and more
+**** Polybar
+[[https://github.com/polybar/polybar][Polybar Github]]
+Top panel for showing information like workspace, battery, time and more.
+Elisp configuration to allow starting, stopping, reseting and more
+hooks for sending workspace number and allowing polybar to change emacs frames (workspace)
+
+Thanks to System Crafters for these functions, allows EXWM to communicate with poly and be able to
+restart polybart from within emacs.
+[[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org#panel-with-polybar][Emacs from Scratch - Polybar]]
+
+#+begin_src emacs-lisp
+
+  (defvar cfg/polybar-process nil
+    "Holds the process of the running Polybar instance, if any")
+
+  (defun cfg/kill-polybar ()
+    (interactive)
+    (when cfg/polybar-process
+      (ignore-errors
+	(kill-process cfg/polybar-process)))
+    (setq cfg/polybar-process nil))
+
+  (defun cfg/start-polybar ()
+    (interactive)
+    (cfg/kill-polybar)
+    (setq cfg/polybar-process (start-process-shell-command
+			       "polybar"
+			       nil
+			       "polybar --config=$XDG_CONFIG_HOME/polybar/config.ini exwm" )))
+
+  (defun cfg/send-polybar-hook (module-name hook-index)
+    (start-process-shell-command "polybar-msg" nil (format
+						    "polybar-msg hook %s %s"
+						    module-name
+						    hook-index)))
+
+  (defun cfg/send-polybar-exwm-workspace ()
+    (cfg/send-polybar-hook "exwm-workspace" 1))
+
+  ;; Update panel indicator when workspace changes
+  (add-hook 'exwm-workspace-switch-hook #'cfg/send-polybar-exwm-workspace)
+
+#+end_src
+
+**** Desktop Notifications - Dunst
+emacs lisp for dunst
+#+begin_src emacs-lisp
+
+  (use-package notifications)
+
+  (defun cfg/dunstctl (command)
+    (start-process-shell-command "dunstctl" nil (concat "dunstctl " command)))
+
+  (exwm-input-set-key (kbd "s-n") (lambda () (interactive) (cfg/dunstctl "history-pop")))
+  (exwm-input-set-key (kbd "s-N") (lambda () (interactive) (cfg/dunstctl "close-all")))
+
+  (defun cfg/disable-desktop-notifications ()
+    (interactive)
+    (message "config: Notifications Disabled")
+    (start-process-shell-command "dunstctl" nil "dunstctl set-paused true"))
+
+  (defun cfg/enable-desktop-notifications ()
+    (interactive)
+    (message "config: Notifications Enabled")
+    (start-process-shell-command "dunstctl" nil "dunstctl set-paused false"))
+
+#+end_src
+
+**** EXWM The Emacs window manager
+[[https://github.com/ch11ng/exwm][EXWM Github]]
+
+the mighty Emacs window manager, few configurations to set which keys pass throught straight to
+emacs, and what to name buffers. firefox is a pain as it needs tweaking to show the name of the tab
+youre in. we set up 5 workspaces initally but more can be added interactivly by pressing =s-N=.
+n being the number workspace you want
+
+EXWM starts workspaces at 0 so to make polybar, and switching to workspace 0 ( the first workspace )
+easier we set the workspace to -1 of what key we press ( 1 >> 0, 5 >> 4 etc..)
+Pesky off by one issues....
+#+begin_src emacs-lisp
+
+  (defun cfg/exwm-init-hook ()
+    (cfg/start-polybar))
+
+  (defun cfg/exwm-update-class ()
+    (exwm-workspace-rename-buffer exwm-class-name))
+
+  (defun cfg/exwm-update-title ()
+    (pcase exwm-class-name
+      ("firefox" (exwm-workspace-rename-buffer (format "Firefox | %s" exwm-title)))))
+
+  (use-package exwm
+    :config
+    ;; Variables
+    (setq exwm-workspace-number 5)
+    (setq exwm-input-prefix-keys '(?\M-x
+				   ?\C-x))
+    (setq exwm-layout-show-all-buffers t)
+    (setq exwm-workspace-show-all-buffers t)
+    ;; (setq exwm-workspace-minibuffer-position 'top)
+    (setq exwm-floating-border-width window-divider-default-right-width
+	  exwm-floating-border-color (face-background 'mode-line))
+
+    (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
+    (setq exwm-input-global-keys
+	  `(
+	    ([s-left] . windmove-left)
+	    ([s-right] . windmove-right)
+	    ([s-up] . windmove-up)
+	    ([s-down] . windmove-down)
+	    ,@(mapcar (lambda (i)
+			`(,(kbd (format "s-%d" i)) .
+			  (lambda ()
+			    (interactive)
+			    (exwm-workspace-switch-create ,(1- i)))))
+		      (number-sequence 0 9))
+
+	    ([s-return] . (lambda (command)
+			    (interactive (list (read-shell-command "$ ")))
+			    (start-process-shell-command command nil command)))
+	    ([?\s-f] . (start-process-shell-command "Firefox" nil "firefox"))
+	    ([?\s-t] . (start-process-shell-command "Alacritty" nil "alacritty"))))
+
+    ;; Hooks
+    (add-hook 'exwm-update-class-hook #'cfg/exwm-update-class)
+    (add-hook 'exwm-update-title-hook #'cfg/exwm-update-title)
+    (add-hook 'exwm-init-hook #'cfg/exwm-init-hook)
+
+    ;; Set screen size correnctly
+    (require 'exwm-randr)
+    (exwm-randr-enable)
+
+    (exwm-enable))
+
+#+end_src
+
+**** Desktop Enviroment
+required to work : brightnessctl
+alsamixer more ect
+
+#+begin_src emacs-lisp
+
+  (use-package desktop-environment
+    :after exwm
+    :config (desktop-environment-mode)
+    :custom
+    (desktop-environment-brightness-small-increment "2%+")
+    (desktop-environment-brightness-small-decrement "2%-")
+    (desktop-environment-brightness-normal-increment "5%+")
+    (desktop-environment-brightness-normal-decrement "5%-"))
+
+#+end_src
+
+**** Buffer Move
+Move buffers around to where you want them with ease
+#+begin_src emacs-lisp
+
+  ;; (windmove-default-keybindings)         ; Move window splits with SHIFT-ARROW
+
+  (use-package buffer-move
+    :bind
+    (("<s-S-up>" . buf-move-up)
+     ("<s-S-down>" . buf-move-down)
+     ("<s-S-left>" . buf-move-left)
+     ("<s-S-right>" . buf-move-right)))
+
+#+end_src
+
+*** Emacs Configurations
+Vanilla Emacs changes, These change emacs itself not and particular packages.
+Main changes include quality of life changes, making sure custom variables are out of the init file,
+inhibiting startup messages and more.
+#+begin_src emacs-lisp
+
+  ;; Emacs Src Configurations
+  (setq fill-column 80)
+  (setq default-directory "~/")
+  (setq scroll-step 1)                    ; keyboard scroll one line at a time
+  (setq use-dialog-box nil)               ; Dont want GUI popups
+
+  (setq custom-file (locate-user-emacs-file "custom-vars.el"))  ; dont clog init.el
+  (load custom-file 'noerror 'nomessage)  ; Load custom vars into seperate file
+
+  ;; Startup
+  (setq inhibit-startup-message t)
+
+  ;; Cursor Customisations
+  (setq blink-cursor-delay 0.5)
+  (setq blink-cursor-interval 0.5)
+
+  ;; Files Customisations
+  (setq make-backup-files nil)
+  (setq confirm-kill-emacs 'y-or-n-p)
+
+    ;; Font-Core
+  (global-font-lock-mode t)
+
+  ;; autorevert
+  (global-auto-revert-mode t)  ; updates buffer if file is updated
+
+    ;; Aliasing
+  (fset 'yes-or-no-p 'y-or-n-p)  ; set all Yes/No to the easier Y/N
+
+    ;; Hooks
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'prog-mode-hook 'subword-mode)
+  (add-hook 'after-save-hook
+	    'executable-make-buffer-file-executable-if-script-p)
+  (add-hook 'before-save-hook
+	    (lambda ()
+	      (when buffer-file-name
+		(let ((dir (file-name-directory buffer-file-name)))
+		  (when (and (not (file-exists-p dir))
+			     (y-or-n-p
+			      (format "Directory %s doesn't exist. Create it?" dir)))
+		    (make-directory dir t))))))
+
+  ;; Need sorting still
+  (setq mouse-wheel-scroll-amount '(2                       ; default
+				    ((shift) . 4)             ; shift scroll
+				    ((meta) . 6)              ; meta scroll
+				    ((control) . text-scale))) ; zoooooom
+  (setq mouse-wheel-progressive-speed nil) ; don't accelerate scrolling
+  (setq mouse-wheel-follow-mouse 't) ; scroll window under mouse
+
+  ;; Emacs 29 Features
+  (if (version< "29" emacs-version)
+      (pixel-scroll-precision-mode 1))
+
+#+end_src
+
+*** Built in packages
+Configurations to the built in packages, these changes make the package defaults more sane as well
+as my personal touch applied.
+
+With built in packages we need to make sure we set Ensure to nil, this stops package.el from trying
+to download a package that might not exist on the repositories.
+
+**** Paren
+Built in parentheses matching package, allows visualisation of matching parenthesis in buffers.
+#+begin_src emacs-lisp
+
+  (use-package paren
+    :ensure nil  ; Dont try and fetch from ELPA
+    :init
+    (show-paren-mode t)
+    :config
+    (setq show-paren-style 'parenthesis)
+    (setq show-paren-delay 0))
+
+#+end_src
+
+**** Recentf
+Recent file keeps track of opened files. It maintains a list of recently opened files and makes it
+easy to visit them. The recent files list is automatically saved across Emacs sessions.
+#+begin_src emacs-lisp
+
+
+  (use-package recentf
+    :ensure nil  ; Dont try and fetch from ELPA
+    :init
+    (recentf-mode 1)
+    (savehist-mode 1) 			; Save minibuffer history
+    :config
+    ;; (setq recentf-max-menu-items 0)
+    (setq recentf-max-saved-items 200)
+    (add-hook 'buffer-list-update-hook #'recentf-track-opened-file))
+
+#+end_src
+
+**** Dired
+Dired is a major mode for browsing and editing directorys (DIRectory EDitor).
+Dired fetchs directorys in a GNU LS fashion, we can change how the directorys are displayed with
+switches.
+#+begin_src emacs-lisp
+
+  (use-package dired
+    :ensure nil  ; Dont try and fetch from ELPA
+    :config
+    (setq dired-listing-switches "-laGhv --group-directories-first"
+	  dired-kill-when-opening-new-dired-buffer t))
+
+#+end_src
+
+*** Look and Feel - UI, theme, modeline.
+**** Gruvbox
+Gruvbox Theme
+#+begin_src emacs-lisp
+
+  (use-package gruvbox-theme
+    :init (load-theme 'gruvbox t)
+    :config
+    ;; (set-face-attribute hl-line-face nil :inherit default :background "#3c3836")
+    ;; Set theme specifics on loading orgmode first time
+
+    (with-eval-after-load "org"
+      (set-face-attribute 'org-level-1 nil :height 1.5)
+      (set-face-attribute 'org-level-2 nil :height 1.2)
+      (set-face-attribute 'org-block-end-line nil :foreground "#282828")
+      (set-face-attribute 'org-block-begin-line nil :foreground "#282828"))
+    (with-eval-after-load "tree-sitter"
+      (set-face-attribute 'tree-sitter-hl-face:function.call nil
+			  :inherit font-lock-function-name-face)))
+
+#+end_src
+
+**** Solaire
+Solaire Mode
+#+begin_src emacs-lisp
+
+  (use-package solaire-mode
+    :init (solaire-global-mode 1))
+
+#+end_src
+
+**** Doom modeline
+Doom modeline
+#+begin_src emacs-lisp
+
+  (line-number-mode 1)
+  (column-number-mode 1)
+
+  (use-package doom-modeline
+    :init (doom-modeline-mode 1)
+    :config
+    (setq doom-modeline-height 30
+	  doom-modeline-bar-width 4
+	  doom-modeline-icon nil
+	  doom-modeline-minor-modes t))
+
+#+end_src
+
+**** Minions - Hide minor modes
+#+begin_src emacs-lisp
+
+  (use-package minions
+    :config (minions-mode 1))
+
+#+end_src
+
+**** Dashboard
+Dashboard
+Logo
+#+begin_src text :tangle ~/.config/emacs/logo.txt
+ _
+ \`*-.
+  )  _`-.
+ .  : `. .
+ : _   '  \
+ ; *` _.   `*-._
+ `-.-'          `-.
+   ;       `       `.
+   :.       .        \
+   . \  .   :   .-'   .
+   '  `+.;  ;  '      :
+   :  '  |    ;       ;-.
+   ; '   : :`-:     _.`* ;
+.*' /  .*' ; .*`- +'  `*'
+`*-*   `*-*  `*-*'
+#+end_src
+
+Emacs Configuration
+#+begin_src emacs-lisp
+
+  (use-package dashboard
+   :config
+   ;; Setup
+   (dashboard-setup-startup-hook)
+   (setq dashboard-center-content t)
+   ;; Banner
+   (setq dashboard-startup-banner "~/.config/emacs/logo.txt")
+   ;; Navigator
+   (setq dashboard-set-navigator t)
+   (setq dashboard-navigator-buttons
+	 `((;; Github
+	    (,(all-the-icons-octicon "mark-github" :height 1.1 :v-adjust 0.0)
+	     "Github"
+	     "My Github Account"
+	     (lambda (&rest _) (browse-url "https://github.com/ethanmoss1")))
+	    ;; Init File
+	    (,(all-the-icons-fileicon "emacs" :height 1.1 :v-adjust -0.15)
+	     "Init"
+	     "Emacs Confguration File"
+	     (lambda (&rest _) (find-file "~/.config/thedotfile.org"))))))
+   ;; init
+   (setq dashboard-set-init-info t)
+   ;; Widgets
+   (setq dashboard-items '((recents  . 10)
+			   (bookmarks . 5)
+			   (agenda . 5)
+			   (registers . 5)))
+   ;; footer
+   (setq dashboard-set-footer nil)
+   ;; Open buffer on Emacs client opening
+   (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))))
+
+#+end_src
+
+**** All the icons
+add icons to things because less works and more smileys, right?
+#+begin_src emacs-lisp
+
+  (use-package all-the-icons
+    :if (display-graphic-p))
+
+#+end_src
+
+*** Mini Buffer
+**** Vertico
+Vertico
+#+begin_src emacs-lisp
+
+  ;; completion ui in minibuffer
+  (use-package vertico
+    :init (vertico-mode 1))
+
+#+end_src
+
+**** Vertico Posframe
+Minibuffer position
+#+begin_src emacs-lisp
+
+  ;; minibuffer positioning
+  (use-package vertico-posframe
+    :after vertico
+    :init (vertico-posframe-mode -1)
+    :config
+    (setq vertico-posframe-poshandler #'posframe-poshandler-frame-top-center))
+
+#+end_src
+
+**** Orderless
+Orderless
+#+begin_src emacs-lisp
+
+  ;; Completion styles
+  (use-package orderless
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
+
+#+end_src
+
+**** Marginalia
+Marginalia
+#+begin_src emacs-lisp
+
+  ;; annotates completion candidates
+  (use-package marginalia
+    :init (marginalia-mode))
+
+#+end_src
+
+**** Consult
+Consult
+#+begin_src emacs-lisp
+
+  ;; unset Buffer list as Consult buffer does this interactively
+  (global-unset-key (kbd "C-x C-b"))
+
+  (use-package consult
+    :bind
+    (("C-x b" . consult-buffer)
+     ("C-s" . consult-line)))
+
+#+end_src
+
+*** Org - The 8th wonder of the world.
+Org reaches far so deserves it own section
+**** Org mode itself
+Org mode
+#+begin_src emacs-lisp
+
+  (use-package org
+    :defer t
+    :config
+    (setq org-hide-leading-stars nil)
+    (add-to-list `org-structure-template-alist
+		 '("el" . "src emacs-lisp")))
+  (use-package visual-fill-column
+    :hook (org-mode . cfg/org-mode-visual-fill))
+
+  (use-package org-make-toc
+    :defer t
+    :config
+    (setq org-make-toc-link-type-fn 'org-make-toc--link-entry-org))
+
+  (defun cfg/org-mode-babel-load-languages ()
+    (org-babel-do-load-languages 'org-babel-load-languages '((shell . t))))
+
+  ;; Center the org documents
+  (defun cfg/org-mode-visual-fill ()
+    (setq visual-fill-column-width 100
+	  visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+
+  ;; Wrap text at the end of the line.
+  (add-hook 'org-mode-hook 'visual-line-mode)
+  (add-hook 'org-mode-hook 'cfg/org-mode-babel-load-languages)
+
+  ;; Tangle file on save
+  (defun cfg/org-babel-auto-tangle ()
+    ;; Auto tangle config
+    (when (string-equal (buffer-file-name)
+			(expand-file-name "~/.config/thedotfile.org"))
+      (let ((org-confirm-babel-evaluate nil))
+	(org-babel-tangle)
+	;; Auto compile Early init and init
+	(byte-compile-file "~/.config/emacs/early-init.el")
+	(byte-compile-file "~/.config/emacs/init.el"))))
+
+  (add-hook 'org-mode-hook (lambda ()
+			     (add-hook 'after-save-hook #'cfg/org-babel-auto-tangle)))
+
+#+end_src
+
+**** Org Roam - Your own personal wiki
+[[https://github.com/org-roam/org-roam][Org Roam Github]]
+Your own personal wiki, used to note taking and collecting thoughts to later write up in a more consise note.
+
+ideas taken from [[https://jethrokuan.github.io/org-roam-guide/][How I take notes]] thank you for the Node ad draft idea
+
+#+begin_src emacs-lisp
+
+    (use-package org-roam
+      :defer t
+      :bind (("C-c n l" . org-roam-buffer-toggle)
+	     ("C-c n f" . org-roam-node-find)
+	     ("C-c n i" . org-roam-node-insert)
+	     ("C-c n c" . org-roam-capture)
+	     ;; Dailies
+	     ("C-c n j" . org-roam-dailies-capture-today))
+      :config
+      ;; (setq org-roam-node-display-template "${title}")  ; default
+      (setq org-roam-node-display-template
+	    (concat "${title:*} "
+		    (propertize "${tags:10}" 'face 'org-tag)))
+
+      ;; Daily Journal Templaye
+      (setq org-roam-dailies-capture-templates
+	'(("d" "default" entry
+	   "* %<%H:%m>: %?"
+	   :target (file+head "%<%Y-%m-%d>.org" "#+TITLE: %<%Y-%m-%d>\n"))))
+
+
+      (if (file-directory-p "~/org-roam/daily") nil (make-directory "~/org-roam/daily"))
+      (setq org-roam-directory (file-truename "~/org-roam")
+	    org-roam-dailies-directory "daily/")
+      (setq find-file-visit-truename t)
+      (org-roam-db-autosync-mode 1))
+
+  (defun cfg/tag-new-node-as-draft ()
+    (org-roam-tag-add '("draft")))
+  (add-hook 'org-roam-capture-new-node-hook #'cfg/tag-new-node-as-draft)
+
+
+#+end_src
+
+**** Org Roam UI - Visualise your Personal Thoughts
+#+begin_src emacs-lisp
+
+  (use-package org-roam-ui
+    :after org-roam
+    :config
+    (setq org-roam-ui-custom-theme
+	  '((bg      . "#282828")
+	    (bg-alt  . "#3c3836")
+	    (fg      . "#fdf4c1")
+	    (fg-alt  . "#ebdbb2")
+	    (red     . "#fb4933")
+	    (orange  . "#fe8019")
+	    (yellow  . "#fabd2f")
+	    (green   . "#b8bb26")
+	    (cyan    . "#8ec07c")
+	    (blue    . "#83a598")
+	    (violet  . "#d3869b")
+	    (magenta . "#b16286"))
+
+	  org-roam-ui-follow t
+	  org-roam-ui-update-on-save t
+	  org-roam-ui-open-on-start t)
+    (org-roam-ui-mode 1))
+
+#+end_src
+
+*** Emacs the IDE
+emacs, an ide? youre 'aving a giggle mate.
+**** Eglot - LSP intergration
+#+begin_src emacs-lisp
+
+  ;; need to install language servers seperatly
+  ;; python -> pyright
+  ;; C#     -> omnisharp
+
+  (use-package eglot
+    :hook (python-mode . eglot-ensure))
+
+#+end_src
+
+**** Completion engine, Company
+#+begin_src emacs-lisp
+
+  (use-package company
+    :defer t
+    :config
+    (setq company-dabbrev-other-buffers t
+	  company-dabbrev-code-other-buffers t
+	  company-minimum-prefix-length 1
+	  company-dabbrev-downcase nil
+	  company-dabbrev-ignore-case t
+	  company-idle-delay 0.2
+	  company-global-modes '(not eshell-mode shell-mode))
+    :hook
+    (python-mode . company-mode))
+
+#+end_src
+
+**** Tree sitter - on the fly syntax highlighting
+Tree sitter makes it pretty
+#+begin_src emacs-lisp
+
+  (use-package tree-sitter
+    :config
+    (global-tree-sitter-mode)
+    :hook
+    (tree-sitter-after-on-hook . tree-sitter-hl-mode))
+
+  (use-package tree-sitter-langs)
+
+#+end_src
+
+**** Version Control - its Magit!
+get it, Magit? no? dissapointing...
+#+begin_src emacs-lisp
+
+    (use-package magit
+    :defer t)
+
+#+end_src
+
+*** Helpful packages
+Packages that make it easier to use emacs, help descriptions as well as key maps
+**** Helpful
+Helpful is an alternative to the built-in Emacs help that provides much more contextual information.
+#+begin_src emacs-lisp
+
+  (use-package helpful
+    :bind
+    ;; Note that the built-in 'describe-function' includes both functions
+    ;; and macros. 'helpful-function' is functions only, so we provide
+    ;; 'helpful-callable' as a drop-in replacement.
+    ("C-h f" . helpful-callable)
+    ("C-h v" . helpful-variable)
+    ("C-h k" . helpful-key)
+    ("C-h h" . helpful-at-point))
+
+#+end_src
+
+**** Which Key
+Which key
+#+begin_src emacs-lisp
+
+    (use-package which-key
+    :diminish
+    :init (which-key-mode)
+    :config
+    (setq which-key-idle-delay 0.7))
+
+#+end_src
+
+**** Rainbow Mode
+Rainbow mode allows us to see the colours that we pick by changing the background of the text
+#+begin_src emacs-lisp
+
+    (use-package rainbow-mode
+    :diminish
+    :commands
+    rainbow-mode
+    :config
+    (setq rainbow-ansi-colors nil)
+    (setq rainbow-x-colors nil))
+
+#+end_src
+
+**** Sudo Edit
+Does what is says on the tin
+#+begin_src emacs-lisp
+
+  (use-package sudo-edit
+    :commands sudo-edit)
+
+#+end_src
+
+*** Keeping Up to date
+How i keep up with the world inside the world of Emacs
+**** Elfeed - an Elisp Webfeed reader
+#+begin_src emacs-lisp
+
+  (use-package elfeed
+    :bind ("C-x w" . elfeed)
+    :config
+    (setq elfeed-feeds
+	  '("https://learn2.open.ac.uk/blocks/news/feed.php?bi=250467")))
+
+#+end_src
+
+*** Personal Elisp
+Elisp that has no specific place but I have create or found over the internet.
+**** PDF Exporting
+Create a PDF of a buffer
+#+begin_src emacs-lisp
+
+  (when (executable-find "ps2pdf")
+    (defun cfg/export-buffer-pdf (&optional filename)
+      "Print file in the current buffer as pdf, including font, color,
+	   and underline information.
+
+	   C-u COMMAND prompts user where to save the Postscript file
+	   (which is then converted to PDF at the same location.)"
+      (interactive (list (if current-prefix-arg
+			     (ps-print-preprint 4)
+			   (concat (file-name-sans-extension (buffer-file-name)) ".ps"))))
+      (ps-print-with-faces (point-min) (point-max) filename)
+      (shell-command (concat "ps2pdf " filename))
+      (delete-file filename)
+      (message "org-export-buffer-pdf: %s Saved as PDF" filename)))
+
+#+end_src
+
+**** HDMI and main Laptop display
+Sometimes I just want to use the larger display, so to conserve battery lets turn off the Laptop
+display
+#+begin_src emacs-lisp
+
+  (defvar cfg/tld--state 1
+    "Hold state of display")
+
+  (defvar cfg/tld-display-name "eDP1"
+    "Name of laptop display")
+
+  (defun cfg/tld--off ()
+    "Turns display off and sets state to off"
+    (message "Turning display: OFF")
+    (shell-command (concat "xrandr --output "
+			   cfg/tld-display-name
+			   " --off"))
+    (setq cfg/tld--state nil))
+
+  (defun cfg/tld--on ()
+    "Turns display on and sets state to on"
+    (message "Turning display: ON")
+    (shell-command (concat "xrandr --output "
+			   cfg/tld-display-name
+			   " --auto"))
+    (setq cfg/tld--state 1))
+
+  (defun cfg/toggle-laptop-display ()
+    "Toggles Laptop display on and off"
+    (interactive)
+    (if cfg/tld--state
+	(cfg/tld--off)
+      (cfg/tld--on)))
+
+#+end_src
+
+*** Giving files their footers
+Since we gave files their headers, I see no reason not to give them footers.
+#+begin_src emacs-lisp :tangle ~/.config/emacs/early-init.el
+
+      ;;; early-init.el ends here
+    #+end_src
+
+    #+begin_src emacs-lisp
+
+      ;;; init.el ends here
+    #+end_src
+
+* Run scripts
+#+begin_src shell
+
+  #! /bin/bash
+
+  chmod +x ~/.config/polybar/scripts/get_spotify_status.sh
+  chmod +x ~/.config/polybar/scripts/scroll_spotify_status.sh
+
+#+end_src
+
+# Local Variables:
+# eval: (org-hide-block-all)
+# End:
